@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:6.2.7-alpine
+    restart: always
+    volumes:
+      - ./redis/data:/data
+    networks:
+      - spring-net
+
+  db:
+    image: postgres:15.1
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: root_password  # please change it
+      POSTGRES_DB: spring
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql/data
+    networks:
+      - spring-net
+
+  web:
+    image: joejoe2/spring-jwt-template:latest
+    restart: always
+    command: "bash ./wait-for-it.sh -t 0 db:5432 -- bash start.sh"
+    env_file:
+      - ./env/application.env
+    networks:
+      - spring-net
+    depends_on:
+      - redis
+      - db
+
+  nginx:
+    image: jonasal/nginx-certbot:latest
+    restart: unless-stopped
+    env_file:
+      - ./nginx/nginx-certbot.env
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/data:/etc/letsencrypt
+      - ./nginx/user_conf.d:/etc/nginx/user_conf.d
+    networks:
+      - spring-net
+    depends_on:
+      - web
+
+
+networks:
+  spring-net:
+

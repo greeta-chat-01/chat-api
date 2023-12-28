@@ -1,0 +1,56 @@
+package com.joejoe2.chat.models;
+
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Entity
+@BatchSize(size = 128) // for many to one
+@Table(name = "account_user")
+public class User {
+  @Id
+  @Column(unique = true, updatable = false, nullable = false)
+  private UUID id;
+
+  @Column(unique = true, length = 32, nullable = false)
+  private String userName;
+
+  @ManyToMany(mappedBy = "members")
+  private Set<PrivateChannel> privateChannels;
+
+  @ManyToMany(mappedBy = "blockedBy")
+  private Set<PrivateChannel> blockedPrivateChannels;
+
+  @ManyToMany(mappedBy = "members")
+  private Set<GroupChannel> groupChannels;
+
+  @OneToMany(mappedBy = "user")
+  private Set<GroupInvitation> invitations;
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof User user)) return false;
+    return Objects.equals(id, user.id) && Objects.equals(userName, user.userName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, userName);
+  }
+
+  @Override
+  public String toString() {
+    return "User{" + "id=" + id + ", userName='" + userName + '\'' + '}';
+  }
+}

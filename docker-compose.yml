@@ -1,0 +1,57 @@
+version: "3.8"
+
+networks:
+  chat:
+    driver: bridge
+
+services:
+
+  redis:
+    image: redis:6.2.7-alpine
+    restart: always
+    volumes:
+      - ./volumes/redis/data:/data
+    networks:
+      - chat
+
+  db:
+    image: postgres:15.1
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: root_password  # please change it
+      POSTGRES_DB: spring
+    volumes:
+      - ./volumes/postgresql/data:/var/lib/postgresql/data
+    networks:
+      - chat
+
+  chat-db:
+    image: postgres:15.1
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: root_password  # please change it
+      POSTGRES_DB: spring-chat
+    volumes:
+      - ./volumes/postgresql/chat-data:/var/lib/postgresql/data
+    networks:
+      - chat
+
+  nats:
+    image: nats:2.8
+    restart: on-failure
+    networks:
+      - chat
+
+  nginx:
+    image: jonasal/nginx-certbot:latest
+    restart: unless-stopped
+    env_file:
+      - ./docker-conf/nginx/nginx-certbot.env
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./volumes/nginx/data:/etc/letsencrypt
+      - ./docker-conf/nginx/user_conf.d:/etc/nginx/user_conf.d
+    networks:
+      - chat
